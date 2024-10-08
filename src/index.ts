@@ -1,9 +1,12 @@
-import { Hono } from 'hono'
+import { Hono } from 'hono';
+import { logger } from 'hono/logger';
 
-const app = new Hono()
+const app = new Hono();
+const api = app.basePath("/api");
+app.use(logger());
 
-app.get('/', (c) => {
-  return c.text('Hello Country!')
+api.get('/', (c) => {
+  return c.text('Hello Country!');
 })
 
-export default app
+export default app;
