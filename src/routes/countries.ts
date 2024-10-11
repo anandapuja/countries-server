@@ -19,7 +19,7 @@ countries.get("/", (c) => {
   }
 
   c.status(200);
-  return c.json(dataCountries);
+  return c.json({ message: "Success Get Countries", data: dataCountries });
 });
 
 // get country by id
@@ -30,11 +30,11 @@ countries.get("/:id", (c) => {
 
   if (!country) {
     c.status(404);
-    return c.json({ message: "Countries Not Found!" });
+    return c.json({ message: "Country Not Found!" });
   }
 
   c.status(200);
-  return c.json({ data: country });
+  return c.json({ message: "Success Get Country", data: country });
 });
 
 // add new country
@@ -56,7 +56,7 @@ countries.post("/", async (c) => {
   };
   const addedCountry = dataCountries.concat(newCountry);
   c.status(200);
-  return c.json({ countries: addedCountry });
+  return c.json({ message: "Success Add Country", countries: addedCountry });
 });
 
 // delete country by id
@@ -68,18 +68,18 @@ countries.delete("/:id", (c) => {
   );
 
   c.status(200);
-  return c.json({ countries: newCountries });
+  return c.json({ message: "Success Delete Country", countries: newCountries });
 });
 
 // delete all countries
-countries.delete("/", (c) => {
+countries.delete("/", async (c) => {
   c.status(200);
-  return c.json({ countries: [] });
+  return c.json({ message: "Success Delete Countries", countries: [] });
 });
 
 // update country by id
 countries.patch("/:id", (c) => {
-  return c.json({ message: "yes" });
+  return c.json({ message: "Success Patch Country" });
 });
 
 export default countries;
