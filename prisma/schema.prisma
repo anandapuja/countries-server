@@ -14,12 +14,17 @@ datasource db {
 }
 
 model Country {
-  id Int @id @default(autoincrement())
-  name 
-  description
-  flag_image
-  population
-  capital
+  id String @id @default(uuid())
+
+  name String @db.VarChar(220) @unique
+  description String @db.Text
+  flagImage String @map("flag_image")
+  population Int @db.Integer
+  capital String @db.VarChar(220)
+
+  presidents President[]
+  religions ReligionsOnCountries[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime
 
@@ -28,10 +33,14 @@ model Country {
 
 model President {
 
-  id
-  name
-  president_image
-  countriesId
+  id String @id @default(uuid())
+
+  name String
+  presidentImage String @map("president_image")
+
+  country Country @relation(fields: [countryId], references: [id])
+  countryId String
+
   createdAt DateTime @default(now())
   updatedAt DateTime
 
@@ -41,23 +50,30 @@ model President {
 
 model Religion {
 
-  id 
-  name
+  id String @id @default(uuid())
+
+  name String @unique @db.VarChar(220)
+
+  countries ReligionsOnCountries[]
   createdAt DateTime @default(now())
+
   updatedAt DateTime
 
   @@map("religions")
 
 }
 
-model ReligionCountry {
+model ReligionsOnCountries {
 
-  id
-  religions_id
-  countries_id
+  religion Religion @relation(fields: [religionId], references: [id])
+  religionId String
+
+  country Country @relation(fields: [countryId], references: [id])
+  countryId String
+
   createdAt DateTime @default(now())
   updatedAt DateTime
 
-  @@religionscountries
+  @@id([religionId, countryId])
 
 }
