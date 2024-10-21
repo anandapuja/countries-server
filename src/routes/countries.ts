@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import dataCountries from "../data/countries";
+import * as pg from "pg";
 
 const countries = new Hono();
 
 // search countries
 countries.get("/search", (c) => {
-  const query = c.req.query("query");
+  const query = c.req.query("");
   return c.json({});
 });
 
@@ -40,6 +41,7 @@ countries.get("/:id", (c) => {
 // add new country
 countries.post("/", async (c) => {
   const body = await c.req.parseBody();
+  const formData = body["image"];
   const newCountry = {
     id: String(dataCountries.length + 1),
     name: String(body.name),
@@ -54,21 +56,26 @@ countries.post("/", async (c) => {
       },
     ],
   };
-  const addedCountry = dataCountries.concat(newCountry);
-  c.status(200);
-  return c.json({ message: "Success Add Country", countries: addedCountry });
+  dataCountries.push(newCountry);
+  c.status(201);
+  return c.json({ message: "Success Add Country", countries: newCountry });
 });
 
 // delete country by id
 countries.delete("/:id", (c) => {
-  const idCountry = c.req.param("id");
+  const country = dataCountries.find((country) => {
+    return country.id === c.req.param("id");
+  });
 
-  const newCountries = dataCountries.filter(
-    (dataCountry) => dataCountry.id !== idCountry
-  );
+  if (!country) {
+    c.status(404);
+    return c.json({
+      message: "Country Not Found!",
+    });
+  }
 
   c.status(200);
-  return c.json({ message: "Success Delete Country", countries: newCountries });
+  return c.json({ message: "Success Delete Country", countries: country });
 });
 
 // delete all countries

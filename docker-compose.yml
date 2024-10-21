@@ -1,6 +1,6 @@
 services:
   backend:
-    image: countries-server:latest # Remember to change the image name
+    # image: . # Remember to change the image name
     build:
       context: .
     ports:
@@ -14,3 +14,7 @@ services:
     env_file: # Change into this
       - path: .env
         required: true
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
