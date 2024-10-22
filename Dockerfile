@@ -1,15 +1,30 @@
 # Use the official Bun image with Debian Linux
 # Oven is the company name, the creator of Bun
-FROM oven/bun:alpine
+# FROM oven/bun:alpine
 
-# Create and change to the app directory
-WORKDIR /usr/src/app
+# # Create and change to the app directory
+# WORKDIR /usr/src/app
 
-# Copy app files
-COPY . .
+# # Copy app files
+# COPY . .
 
-# Install app dependencies
+# # Install app dependencies
+# RUN bun install
+
+# # Run the application
+
+FROM oven/bun
+
+WORKDIR /app
+
+COPY . /app
+
 RUN bun install
 
-# Run the application
+COPY prisma ./prisma/
+
+COPY . .
+
+RUN bunx prisma generate
+
 CMD ["bun", "start"]
