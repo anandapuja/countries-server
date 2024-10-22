@@ -39,7 +39,7 @@ model President {
   presidentImage String @map("president_image")
 
   country Country @relation(fields: [countryId], references: [id])
-  countryId String
+  countryId String @map("country_id")
 
   createdAt DateTime @default(now())
   updatedAt DateTime
@@ -66,10 +66,10 @@ model Religion {
 model ReligionsOnCountries {
 
   religion Religion @relation(fields: [religionId], references: [id])
-  religionId String
+  religionId String @map("religion_id")
 
   country Country @relation(fields: [countryId], references: [id])
-  countryId String
+  countryId String @map("country_id")
 
   createdAt DateTime @default(now())
   updatedAt DateTime

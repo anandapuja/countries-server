@@ -1,10 +1,9 @@
 import { Hono } from "hono";
-import dataCountries from "../data/countries";
 import { PrismaClient } from "@prisma/client";
-// import * as pg from "pg";
 
 const countries = new Hono();
 const prisma = new PrismaClient();
+//Tulis Log di Client
 
 // search countries
 countries.get("/search", (c) => {
@@ -16,8 +15,10 @@ countries.get("/search", (c) => {
 countries.get("/", async (c) => {
   try {
     const countries = await prisma.country.findMany();
+    if (countries.length === 0) throw new Error("Not Found");
     return c.json({ message: "Success Get Data", data: countries }, 200);
   } catch (error) {
+    if (error instanceof Error) return c.json({ message: error.message }, 404);
     return c.json({ message: "Internal Server Error", data: error }, 500);
   }
 });
@@ -47,15 +48,14 @@ countries.get("/:id", async (c) => {
       200
     );
   } catch (error) {
-    if (error === "Not Found") {
+    if (error instanceof Error)
       return c.json(
         {
-          message: "Not Found",
+          message: error.message,
           data: error,
         },
         404
       );
-    }
     return c.json(
       {
         message: "Error",
@@ -88,7 +88,7 @@ countries.post("/", async (c) => {
     });
 
     return c.json(
-      { message: "Success Insert Data", message: insertedCountry },
+      { message: "Success Insert Data", data: insertedCountry },
       201
     );
   } catch (error) {
@@ -97,54 +97,61 @@ countries.post("/", async (c) => {
       data: error,
     });
   }
-
-  //insert data
-  // const createCountry = await prisma.country.create({
-  //   data: country,
-  // });
-
-  // const body = await c.req.parseBody();
-  // const formData = body["image"];
-  // const newCountry = {
-  //   id: String(dataCountries.length + 1),
-  //   name: String(body.name),
-  //   description: String(body.description),
-  //   flagImage: String(body.flagImage),
-  //   populations: Number(body.populations),
-  //   capital: String(body.capital),
-  //   presidents: [
-  //     {
-  //       name: " ",
-  //       presidentImage: " ",
-  //     },
-  //   ],
-  // };
-  // dataCountries.push(newCountry);
-  // c.status(201);
-  // return c.json({ message: "Success Add Country", countries: newCountry });
 });
 
-// delete country by id
-countries.delete("/:id", (c) => {
-  const country = dataCountries.find((country) => {
-    return country.id === c.req.param("id");
+// DELETE COUNTRY BY ID
+countries.delete("/:id", async (c) => {
+  // get country
+  const countryId = c.req.param("id");
+
+  const country = await prisma.country.findUnique({
+    where: {
+      id: countryId,
+    },
   });
 
-  if (!country) {
-    c.status(404);
-    return c.json({
-      message: "Country Not Found!",
-    });
-  }
+  // check if country does not exist
+  if (!country)
+    return c.json(
+      {
+        message: "Not Found",
+        data: country,
+      },
+      404
+    );
 
-  c.status(200);
-  return c.json({ message: "Success Delete Country", countries: country });
+  // delete country by id
+  const deletedCountry = await prisma.country.delete({
+    where: {
+      id: countryId,
+    },
+  });
+
+  return c.json(
+    {
+      message: "Success Delete Data",
+      data: country,
+      status: deletedCountry,
+    },
+    200
+  );
 });
 
-// delete all countries
+// DELETE ALL COUNTRY
 countries.delete("/", async (c) => {
-  c.status(200);
-  return c.json({ message: "Success Delete Countries", countries: [] });
+  try {
+    const deletedCountry = await prisma.country.deleteMany({});
+
+    return c.json(
+      {
+        message: `Success Delete ${deletedCountry.count} Data`,
+        data: deletedCountry,
+      },
+      200
+    );
+  } catch (error) {
+    return c.json({ message: "Error Delete Data", data: [] }, 500);
+  }
 });
 
 // update country by id
