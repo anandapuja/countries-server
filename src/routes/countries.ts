@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 const countries = new Hono();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ log: ["query", "info", "warn", "error"] });
 //Tulis Log di Client
 
 // search countries
@@ -14,9 +15,17 @@ countries.get("/search", (c) => {
 // GET ALL COUNTRY
 countries.get("/", async (c) => {
   try {
-    const countries = await prisma.country.findMany();
-    if (countries.length === 0) throw new Error("Not Found");
-    return c.json({ message: "Success Get Data", data: countries }, 200);
+    const countries = await prisma.country.findMany({
+      include: {
+        presidents: true,
+        religions: true,
+      },
+    });
+    if (countries.length === 0) throw new Error("Countries Not Found");
+    return c.json(
+      { message: "Success Get Data Countries", data: countries },
+      200
+    );
   } catch (error) {
     if (error instanceof Error) return c.json({ message: error.message }, 404);
     return c.json({ message: "Internal Server Error", data: error }, 500);
@@ -28,37 +37,43 @@ countries.get("/:id", async (c) => {
   // get country id
   const countryId = c.req.param("id");
 
-  // get country
   try {
+    // get country
     const country = await prisma.country.findUnique({
       where: {
         id: countryId,
       },
+      include: {
+        presidents: true,
+        religions: true,
+      },
     });
 
     if (!country) {
-      throw new Error("Not Found");
+      throw new Error(`Country with ID: ${c.req.param("id")} Not Found`);
     }
 
     return c.json(
       {
-        message: "Success Get Country",
+        message: `Success Get Country with ID: ${c.req.param("id")}`,
         data: country,
       },
       200
     );
   } catch (error) {
-    if (error instanceof Error)
+    if (
+      error instanceof Error ||
+      error instanceof PrismaClientKnownRequestError
+    )
       return c.json(
         {
           message: error.message,
-          data: error,
         },
         404
       );
     return c.json(
       {
-        message: "Error",
+        message: "Internal Server Error",
         data: error,
       },
       500
@@ -68,73 +83,72 @@ countries.get("/:id", async (c) => {
 
 // ADD NEW COUNTRY
 countries.post("/", async (c) => {
-  // parsing data
-  const body = await c.req.parseBody();
+  const body = await c.req.json();
 
-  // validating data
-  let country = {
-    name: body.name,
-    description: body.description,
-    population: +body.population,
-    flagImage: body.flagImage,
-    capital: body.capital,
-    updatedAt: new Date(),
-  };
-
-  // insert data
   try {
     const insertedCountry = await prisma.country.create({
-      data: country,
+      data: {
+        name: body.name,
+        description: body.description,
+        population: +body.population,
+        flagImage: body.flagImage,
+        capital: body.capital,
+        updatedAt: new Date(),
+        religions: {
+          connect: body.religions,
+        },
+      },
+      include: {
+        religions: true,
+        presidents: true,
+      },
     });
 
     return c.json(
-      { message: "Success Insert Data", data: insertedCountry },
+      { message: "Success Insert Data Country", data: insertedCountry },
       201
     );
   } catch (error) {
-    return c.json({
-      message: "Error",
-      data: error,
-    });
+    console.log(error);
+    return c.json(
+      {
+        message: "Internal Server Error",
+        data: error,
+      },
+      500
+    );
   }
 });
 
 // DELETE COUNTRY BY ID
 countries.delete("/:id", async (c) => {
-  // get country
-  const countryId = c.req.param("id");
+  try {
+    const country = await prisma.country.findUnique({
+      where: {
+        id: c.req.param("id"),
+      },
+    });
 
-  const country = await prisma.country.findUnique({
-    where: {
-      id: countryId,
-    },
-  });
+    if (!country)
+      throw new Error(`Country with ID ${c.req.param("id")} Not Found`);
 
-  // check if country does not exist
-  if (!country)
+    await prisma.country.delete({
+      where: {
+        id: c.req.param("id"),
+      },
+    });
+
     return c.json(
       {
-        message: "Not Found",
+        message: `Success Delete Data with ID ${c.req.param("id")}`,
         data: country,
       },
-      404
+      200
     );
-
-  // delete country by id
-  const deletedCountry = await prisma.country.delete({
-    where: {
-      id: countryId,
-    },
-  });
-
-  return c.json(
-    {
-      message: "Success Delete Data",
-      data: country,
-      status: deletedCountry,
-    },
-    200
-  );
+  } catch (error) {
+    if (error instanceof Error) return c.json({ message: error.message }, 404);
+    return c.json({ message: "Internal Server Error" }, 500);
+  }
 });
 
 // DELETE ALL COUNTRY
@@ -150,7 +164,7 @@ countries.delete("/", async (c) => {
       200
     );
   } catch (error) {
-    return c.json({ message: "Error Delete Data", data: [] }, 500);
+    return c.json({ message: "Internal Server Error" }, 500);
   }
 });
 
