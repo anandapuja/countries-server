@@ -61,7 +61,6 @@ religions.post("/", async (c) => {
 
     const religion = {
       name: name,
-      updatedAt: new Date(),
     };
 
     const createdReligion = await prisma.religion.create({

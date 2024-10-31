@@ -18,16 +18,15 @@ countries.get("/", async (c) => {
     const countries = await prisma.country.findMany({
       include: {
         presidents: true,
-        religions: true,
+        religions: { include: { religion: true } },
       },
     });
-    if (countries.length === 0) throw new Error("Countries Not Found");
+
     return c.json(
       { message: "Success Get Data Countries", data: countries },
       200
     );
   } catch (error) {
-    if (error instanceof Error) return c.json({ message: error.message }, 404);
     return c.json({ message: "Internal Server Error", data: error }, 500);
   }
 });
@@ -45,7 +44,7 @@ countries.get("/:id", async (c) => {
       },
       include: {
         presidents: true,
-        religions: true,
+        religions: { include: { religion: true } },
       },
     });
 
@@ -85,6 +84,19 @@ countries.get("/:id", async (c) => {
 countries.post("/", async (c) => {
   const body = await c.req.json();
 
+  const religions = body.religions.map((religion: any) => {
+    console.log(religion);
+    return {
+      religion: {
+        connect: {
+          id: religion.id,
+        },
+      },
+    };
+  });
+
+  console.log(religions);
+
   try {
     const insertedCountry = await prisma.country.create({
       data: {
@@ -93,15 +105,13 @@ countries.post("/", async (c) => {
         population: +body.population,
         flagImage: body.flagImage,
         capital: body.capital,
-        updatedAt: new Date(),
         religions: {
-          connect: body.religions,
+          create: body.religions.map((religion: any) => {
+            return { religion: { connect: { id: religion.religionId } } };
+          }),
         },
       },
-      include: {
-        religions: true,
-        presidents: true,
-      },
+      include: { religions: true },
     });
 
     return c.json(
@@ -109,7 +119,6 @@ countries.post("/", async (c) => {
       201
     );
   } catch (error) {
-    console.log(error);
     return c.json(
       {
         message: "Internal Server Error",
@@ -169,8 +178,56 @@ countries.delete("/", async (c) => {
 });
 
 // update country by id
-countries.patch("/:id", (c) => {
-  return c.json({ message: "Success Patch Country" });
+countries.patch("/:id", async (c) => {
+  const body = await c.req.json();
+
+  try {
+    const country = await prisma.country.findUnique({
+      where: {
+        id: c.req.param("id"),
+      },
+    });
+
+    if (!country)
+      throw new Error(`Country with ID ${c.req.param("id")} Not Found`);
+
+    const updatedCountry = await prisma.country.update({
+      data: {
+        name: body.name,
+        description: body.description,
+        population: +body.population,
+        flagImage: body.flagImage,
+        capital: body.capital,
+        religions: {
+          create: [
+            {
+              religionId: "5e03c95d-1380-47ee-9a35-2af0934367f2",
+            },
+            {
+              religionId: "8b57d474-0a74-40e8-a867-a1198b234d8d",
+            },
+          ],
+        },
+      },
+      where: {
+        id: c.req.param("id"),
+      },
+    });
+
+    return c.json(
+      { message: "Success Update Data Country", data: updatedCountry },
+      201
+    );
+  } catch (error) {
+    if (error instanceof Error) return c.json({ message: error.message }, 404);
+    return c.json(
+      {
+        message: "Internal Server Error",
+        data: error,
+      },
+      500
+    );
+  }
 });
 
 export default countries;

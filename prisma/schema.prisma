@@ -26,7 +26,7 @@ model Country {
   religions ReligionsOnCountries[]
   
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
 
   @@map("countries")
 }
@@ -42,7 +42,7 @@ model President {
   countryId String @map("country_id")
 
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
 
   @@map("presidents")
 
@@ -55,9 +55,9 @@ model Religion {
   name String @unique @db.VarChar(220)
 
   countries ReligionsOnCountries[]
-  createdAt DateTime @default(now())
 
-  updatedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("religions")
 
@@ -72,7 +72,7 @@ model ReligionsOnCountries {
   countryId String @map("country_id")
 
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
 
   @@id([religionId, countryId])
 
