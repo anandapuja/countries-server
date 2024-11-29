@@ -1,11 +1,10 @@
-import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client";
+// import { Hono } from "hono";
+import { prisma } from "../db";
+import { hono as countries } from "../index";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import countryController from "../controller/countryController";
 
-const countries = new Hono();
-const prisma = new PrismaClient({ log: ["query", "info", "warn", "error"] });
-//Tulis Log di Client
-
+// const countries = new Hono();
 // search countries
 countries.get("/search", (c) => {
   const query = c.req.query("");
@@ -32,53 +31,7 @@ countries.get("/", async (c) => {
 });
 
 // GET COUNTRY BY ID
-countries.get("/:id", async (c) => {
-  // get country id
-  const countryId = c.req.param("id");
-
-  try {
-    // get country
-    const country = await prisma.country.findUnique({
-      where: {
-        id: countryId,
-      },
-      include: {
-        presidents: true,
-        religions: { include: { religion: true } },
-      },
-    });
-
-    if (!country) {
-      throw new Error(`Country with ID: ${c.req.param("id")} Not Found`);
-    }
-
-    return c.json(
-      {
-        message: `Success Get Country with ID: ${c.req.param("id")}`,
-        data: country,
-      },
-      200
-    );
-  } catch (error) {
-    if (
-      error instanceof Error ||
-      error instanceof PrismaClientKnownRequestError
-    )
-      return c.json(
-        {
-          message: error.message,
-        },
-        404
-      );
-    return c.json(
-      {
-        message: "Internal Server Error",
-        data: error,
-      },
-      500
-    );
-  }
-});
+countries.get("/:id", async (c) => countryController.getCountryById(c));
 
 // ADD NEW COUNTRY
 countries.post("/", async (c) => {

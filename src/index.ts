@@ -17,6 +17,8 @@ app.route("/countries", countriesRouter);
 app.route("/presidents", presidentsRouter);
 app.route("/religions", religionsRouter);
 
+export const hono = app;
+
 export default {
   port: 3000,
   fetch: app.fetch,

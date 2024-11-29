@@ -1,8 +1,8 @@
+// import { hono as presidents } from "../index";
 import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db";
 
 const presidents = new Hono();
-const prisma = new PrismaClient({ log: ["query", "info", "warn", "error"] });
 
 // GET ALL PRESIDENT
 presidents.get("/", async (c) => {

@@ -1,16 +1,20 @@
+// import { hono as religions } from "../index";
 import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 const religions = new Hono();
-const prisma = new PrismaClient({ log: ["query", "info", "warn", "error"] });
 
 // GET ALL RELIGIONS
 religions.get("/", async (c) => {
   try {
     const religions = await prisma.religion.findMany({
       include: {
-        countries: true,
+        countries: {
+          include: {
+            country: true,
+          },
+        },
       },
     });
     if (religions.length === 0) throw new Error("Religions Not Found");
@@ -33,6 +37,13 @@ religions.get("/:id", async (c) => {
     const religion = await prisma.religion.findUnique({
       where: {
         id: c.req.param("id"),
+      },
+      include: {
+        countries: {
+          include: {
+            country: true,
+          },
+        },
       },
     });
     if (!religion)
